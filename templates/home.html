@@ -1,0 +1,553 @@
+{% extends "base.html" %}
+{% block title %}SiteGrade — Instant Website Health Report | SSL, Security, Performance{% endblock %}
+{% block meta_description %}Check your website's SSL, security headers, performance, tech stack, DNS, and mobile readiness in one click. Get an A-F grade with a downloadable PDF report for $1.99.{% endblock %}
+
+{% block extra_head %}
+<style>
+    .grade-badge { font-size: 4rem; font-weight: 800; line-height: 1; }
+    .score-bar { height: 8px; border-radius: 4px; transition: width 0.6s ease; }
+    .category-card { transition: all 0.2s; }
+    .category-card:hover { transform: translateY(-2px); }
+    @keyframes pulse-scan { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .scanning { animation: pulse-scan 1.5s ease-in-out infinite; }
+    .spinner { border:3px solid rgba(255,255,255,0.3); border-top:3px solid white; border-radius:50%; width:20px; height:20px; animation:spin 0.8s linear infinite; display:inline-block; }
+    @keyframes spin { to{transform:rotate(360deg)} }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-16">
+    <!-- Hero -->
+    <div class="text-center mb-12">
+        <div class="inline-flex items-center bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full text-sm font-medium mb-6">
+            🔍 7 checks · 1 click · instant results
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-4">
+            Instant Website Health Report
+        </h1>
+        <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+            SSL, security headers, performance, tech stack, DNS &amp; mobile readiness — graded A+ to F. Stop running 5 different tools.
+        </p>
+    </div>
+
+    <!-- Scan Form -->
+    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-8 mb-12">
+        <form id="scan-form" class="flex flex-col sm:flex-row gap-4">
+            {% csrf_token %}
+            <input type="url" name="url" id="url-input" required
+                class="flex-1 px-5 py-4 bg-gray-800 border border-gray-700 rounded-xl text-white text-lg placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                placeholder="Enter any website URL (e.g. example.com)">
+            <button type="submit" id="scan-btn"
+                class="bg-emerald-600 text-white py-4 px-8 rounded-xl font-semibold text-lg hover:bg-emerald-500 transition whitespace-nowrap">
+                Scan Now — Free
+            </button>
+        </form>
+        <p class="text-gray-500 text-sm mt-3 text-center">Free preview shows grades. Full report with details + PDF: $1.99</p>
+    </div>
+
+    <!-- Scanning indicator -->
+    <div id="scanning" class="hidden text-center py-12">
+        <div class="scanning">
+            <div class="text-6xl mb-4">🔍</div>
+            <p class="text-xl text-gray-300 font-medium">Scanning website...</p>
+            <p class="text-gray-500 mt-2" id="scan-status">Checking SSL certificate...</p>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+        <!-- Overall Grade -->
+        <div class="bg-gray-900 rounded-2xl border border-gray-800 p-8 mb-8 text-center">
+            <p class="text-gray-400 text-sm uppercase tracking-wider mb-2">Overall Grade</p>
+            <div class="grade-badge mb-2" id="overall-grade"></div>
+            <p class="text-gray-400"><span id="result-domain" class="text-white font-medium"></span> scored <span id="overall-score" class="text-white font-bold"></span>/100</p>
+        </div>
+
+        <!-- Category Scores -->
+        <div class="grid md:grid-cols-2 gap-4 mb-8" id="scores-grid"></div>
+
+        <!-- Detailed Results (paid only) -->
+        <div id="details-section" class="hidden space-y-6 mb-8"></div>
+
+        <!-- Payment / PDF CTA -->
+        <div id="payment-cta" class="hidden bg-gradient-to-r from-emerald-900/50 to-teal-900/50 border border-emerald-800 rounded-2xl p-8 text-center mb-8">
+            <h3 class="text-xl font-bold text-white mb-2">Unlock Full Report + PDF</h3>
+            <p class="text-gray-400 mb-6">Get detailed findings, fix recommendations, and a client-ready PDF report</p>
+            <button id="pay-btn" class="bg-emerald-600 text-white py-3 px-8 rounded-xl font-semibold text-lg hover:bg-emerald-500 transition">
+                Get Full Report — $1.99
+            </button>
+            <div id="payment-processing" class="hidden"><div class="spinner"></div> Processing payment...</div>
+        </div>
+
+        <!-- PDF download (after payment) -->
+        <div id="pdf-cta" class="hidden text-center mb-8">
+            <a id="pdf-link" href="#" class="inline-flex items-center bg-gray-800 border border-gray-700 text-white py-3 px-8 rounded-xl font-semibold hover:bg-gray-700 transition">
+                📄 Download PDF Report
+            </a>
+        </div>
+
+        <!-- Scan Another -->
+        <div class="text-center">
+            <button onclick="location.reload()" class="text-emerald-400 hover:text-emerald-300 font-medium">
+                ← Scan another site
+            </button>
+        </div>
+    </div>
+
+    <!-- How It Works -->
+    <div class="grid md:grid-cols-3 gap-8 mb-16 mt-16" id="how-it-works">
+        <div class="text-center p-6">
+            <div class="text-4xl mb-3">🔗</div>
+            <h3 class="font-semibold text-lg mb-2 text-white">Paste Your URL</h3>
+            <p class="text-gray-400">Enter any website address — no signup, no install, no waiting.</p>
+        </div>
+        <div class="text-center p-6">
+            <div class="text-4xl mb-3">⚡</div>
+            <h3 class="font-semibold text-lg mb-2 text-white">7 Real-Time Checks</h3>
+            <p class="text-gray-400">SSL, security headers, performance, tech stack, DNS, mobile — all tested live against your site.</p>
+        </div>
+        <div class="text-center p-6">
+            <div class="text-4xl mb-3">📊</div>
+            <h3 class="font-semibold text-lg mb-2 text-white">Get Your Grade</h3>
+            <p class="text-gray-400">A+ to F across every category. Unlock the full PDF report with fix recommendations for $1.99.</p>
+        </div>
+    </div>
+
+    <!-- Features -->
+    <div class="mb-16">
+        <h2 class="text-3xl font-bold text-center text-white mb-10">What We Check</h2>
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">🔒</span>
+                    <h3 class="font-semibold text-white text-lg">SSL Certificate</h3>
+                </div>
+                <p class="text-gray-400">Issuer, expiry date, days remaining, protocol version, cipher strength. Know before it breaks.</p>
+            </div>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">🛡️</span>
+                    <h3 class="font-semibold text-white text-lg">Security Headers</h3>
+                </div>
+                <p class="text-gray-400">HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.</p>
+            </div>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">🚀</span>
+                    <h3 class="font-semibold text-white text-lg">Performance</h3>
+                </div>
+                <p class="text-gray-400">TTFB, total page size, redirect chains, gzip/brotli compression detection.</p>
+            </div>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">🔧</span>
+                    <h3 class="font-semibold text-white text-lg">Tech Stack</h3>
+                </div>
+                <p class="text-gray-400">CMS, framework, CDN, analytics, server software — detected from headers and HTML fingerprints.</p>
+            </div>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">🌐</span>
+                    <h3 class="font-semibold text-white text-lg">DNS Health</h3>
+                </div>
+                <p class="text-gray-400">A/AAAA/MX/NS records, SPF and DMARC for email security. Catch misconfiguration early.</p>
+            </div>
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6">
+                <div class="flex items-center gap-3 mb-3">
+                    <span class="text-2xl">📱</span>
+                    <h3 class="font-semibold text-white text-lg">Mobile Ready</h3>
+                </div>
+                <p class="text-gray-400">Viewport meta tag, responsive indicators, touch icon presence, media query detection.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="mb-16">
+        <h2 class="text-3xl font-bold text-center text-white mb-8">Frequently Asked Questions</h2>
+        <div class="space-y-4">
+            <details class="bg-gray-900 border border-gray-800 rounded-lg p-5 group">
+                <summary class="font-semibold cursor-pointer text-white">What does SiteGrade check?</summary>
+                <p class="mt-3 text-gray-400">SiteGrade runs 7 real-time checks against your website: SSL certificate validity, security headers, page performance (TTFB, size, compression), tech stack detection, DNS health (including SPF/DMARC), mobile readiness, and calculates a weighted overall grade from A+ to F.</p>
+            </details>
+            <details class="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                <summary class="font-semibold cursor-pointer text-white">Is the scan free?</summary>
+                <p class="mt-3 text-gray-400">Yes! The scan and grade preview are completely free. You can see your A-F grade across all 6 categories at no cost. The full detailed report with specific findings, fix recommendations, and a downloadable PDF is $1.99.</p>
+            </details>
+            <details class="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                <summary class="font-semibold cursor-pointer text-white">How is the overall grade calculated?</summary>
+                <p class="mt-3 text-gray-400">The overall grade is a weighted average: SSL (25%), Security Headers (20%), Performance (20%), DNS (15%), Mobile (10%), Tech Stack (10%). Scores of 90+ get A+, 80+ get A, 70+ get B, and so on down to F.</p>
+            </details>
+            <details class="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                <summary class="font-semibold cursor-pointer text-white">Can I share the report with my client or boss?</summary>
+                <p class="mt-3 text-gray-400">Absolutely — that's what the PDF is for. The $1.99 full report generates a professional, branded PDF with grades, detailed findings, and specific recommendations you can email to stakeholders.</p>
+            </details>
+            <details class="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                <summary class="font-semibold cursor-pointer text-white">Does SiteGrade use AI?</summary>
+                <p class="mt-3 text-gray-400">No. SiteGrade performs real network analysis — actual SSL handshakes, live HTTP requests, DNS resolution, and HTML parsing. No AI, no estimates, no guessing. Every data point comes from testing your site directly.</p>
+            </details>
+            <details class="bg-gray-900 border border-gray-800 rounded-lg p-5">
+                <summary class="font-semibold cursor-pointer text-white">How long does a scan take?</summary>
+                <p class="mt-3 text-gray-400">Typically 5-15 seconds depending on the target site's response time. SSL checks, DNS resolution, and HTTP requests all happen in parallel where possible.</p>
+            </details>
+        </div>
+    </div>
+</div>
+
+<!-- FAQ Schema -->
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+        {
+            "@type": "Question",
+            "name": "What does SiteGrade check?",
+            "acceptedAnswer": {"@type": "Answer", "text": "SiteGrade runs 7 real-time checks against your website: SSL certificate validity, security headers, page performance, tech stack detection, DNS health, mobile readiness, and a weighted overall grade from A+ to F."}
+        },
+        {
+            "@type": "Question",
+            "name": "Is the scan free?",
+            "acceptedAnswer": {"@type": "Answer", "text": "Yes! The scan and grade preview are completely free. The full detailed report with a downloadable PDF is $1.99."}
+        },
+        {
+            "@type": "Question",
+            "name": "How is the overall grade calculated?",
+            "acceptedAnswer": {"@type": "Answer", "text": "The overall grade is a weighted average: SSL (25%), Security Headers (20%), Performance (20%), DNS (15%), Mobile (10%), Tech Stack (10%)."}
+        },
+        {
+            "@type": "Question",
+            "name": "Can I share the report with my client?",
+            "acceptedAnswer": {"@type": "Answer", "text": "Absolutely — the $1.99 full report generates a professional PDF with grades, findings, and recommendations you can email to stakeholders."}
+        },
+        {
+            "@type": "Question",
+            "name": "Does SiteGrade use AI?",
+            "acceptedAnswer": {"@type": "Answer", "text": "No. SiteGrade performs real network analysis — actual SSL handshakes, live HTTP requests, DNS resolution, and HTML parsing. Every data point comes from testing your site directly."}
+        },
+        {
+            "@type": "Question",
+            "name": "How long does a scan take?",
+            "acceptedAnswer": {"@type": "Answer", "text": "Typically 5-15 seconds depending on the target site's response time."}
+        }
+    ]
+}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+{% if stripe_publishable_key %}
+<script src="https://js.stripe.com/v3/"></script>
+{% endif %}
+<script>
+const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+let currentReportId = null;
+
+const scanForm = document.getElementById('scan-form');
+const scanBtn = document.getElementById('scan-btn');
+const scanning = document.getElementById('scanning');
+const results = document.getElementById('results');
+const howItWorks = document.getElementById('how-it-works');
+
+const statusMessages = [
+    'Checking SSL certificate...',
+    'Analyzing security headers...',
+    'Measuring performance...',
+    'Detecting tech stack...',
+    'Resolving DNS records...',
+    'Testing mobile readiness...',
+    'Calculating grade...'
+];
+
+scanForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url = document.getElementById('url-input').value.trim();
+    if (!url) return;
+
+    // Show scanning
+    scanForm.closest('.bg-gray-900').classList.add('hidden');
+    scanning.classList.remove('hidden');
+    results.classList.add('hidden');
+    howItWorks.classList.add('hidden');
+
+    // Rotate status messages
+    let msgIdx = 0;
+    const statusEl = document.getElementById('scan-status');
+    const interval = setInterval(() => {
+        msgIdx = (msgIdx + 1) % statusMessages.length;
+        statusEl.textContent = statusMessages[msgIdx];
+    }, 2000);
+
+    try {
+        const formData = new FormData();
+        formData.append('url', url);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        const resp = await fetch('/scan/', { method: 'POST', body: formData });
+        const data = await resp.json();
+
+        clearInterval(interval);
+        scanning.classList.add('hidden');
+
+        if (data.error) {
+            alert(data.error);
+            scanForm.closest('.bg-gray-900').classList.remove('hidden');
+            howItWorks.classList.remove('hidden');
+            return;
+        }
+
+        currentReportId = data.report_id;
+        renderResults(data);
+
+    } catch (err) {
+        clearInterval(interval);
+        scanning.classList.add('hidden');
+        scanForm.closest('.bg-gray-900').classList.remove('hidden');
+        howItWorks.classList.remove('hidden');
+        alert('Scan failed. Please try again.');
+    }
+});
+
+function gradeColor(score) {
+    if (score >= 80) return '#10B981';
+    if (score >= 60) return '#F59E0B';
+    return '#EF4444';
+}
+
+function letterGrade(score) {
+    if (score >= 90) return 'A+';
+    if (score >= 80) return 'A';
+    if (score >= 70) return 'B';
+    if (score >= 60) return 'C';
+    if (score >= 50) return 'D';
+    return 'F';
+}
+
+function renderResults(data) {
+    results.classList.remove('hidden');
+
+    // Overall grade
+    const gradeEl = document.getElementById('overall-grade');
+    gradeEl.textContent = data.overall_grade;
+    gradeEl.style.color = gradeColor(data.overall_score);
+    document.getElementById('result-domain').textContent = data.domain;
+    document.getElementById('overall-score').textContent = data.overall_score;
+
+    // Category scores
+    const categories = [
+        { key: 'ssl', label: 'SSL Certificate', icon: '🔒' },
+        { key: 'headers', label: 'Security Headers', icon: '🛡️' },
+        { key: 'performance', label: 'Performance', icon: '🚀' },
+        { key: 'techstack', label: 'Tech Stack', icon: '🔧' },
+        { key: 'dns', label: 'DNS Health', icon: '🌐' },
+        { key: 'mobile', label: 'Mobile Ready', icon: '📱' },
+    ];
+
+    const grid = document.getElementById('scores-grid');
+    grid.innerHTML = '';
+    categories.forEach(cat => {
+        const score = data.scores[cat.key];
+        const color = gradeColor(score);
+        grid.innerHTML += `
+            <div class="category-card bg-gray-900 border border-gray-800 rounded-xl p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${cat.icon}</span>
+                        <span class="font-medium text-white">${cat.label}</span>
+                    </div>
+                    <span class="font-bold text-lg" style="color:${color}">${letterGrade(score)}</span>
+                </div>
+                <div class="w-full bg-gray-800 rounded-full h-2">
+                    <div class="score-bar" style="width:${score}%;background:${color}"></div>
+                </div>
+                <p class="text-right text-sm text-gray-500 mt-1">${score}/100</p>
+            </div>`;
+    });
+
+    // Show details if paid, otherwise show payment CTA
+    if (data.paid && data.details) {
+        renderDetails(data.details);
+        document.getElementById('pdf-cta').classList.remove('hidden');
+        document.getElementById('pdf-link').href = `/report/${currentReportId}/pdf/`;
+        document.getElementById('payment-cta').classList.add('hidden');
+    } else {
+        document.getElementById('payment-cta').classList.remove('hidden');
+        document.getElementById('pdf-cta').classList.add('hidden');
+    }
+}
+
+function renderDetails(details) {
+    const section = document.getElementById('details-section');
+    section.classList.remove('hidden');
+    section.innerHTML = '';
+
+    // SSL
+    const ssl = details.ssl;
+    let sslHtml = '<div class="bg-gray-900 border border-gray-800 rounded-xl p-6"><h3 class="text-lg font-bold text-white mb-4">🔒 SSL Certificate Details</h3>';
+    if (ssl.valid) {
+        sslHtml += `<div class="space-y-2 text-sm">
+            <p class="text-emerald-400">✓ Valid certificate</p>
+            <p class="text-gray-300">Issuer: ${ssl.issuer}</p>
+            <p class="text-gray-300">Expires: ${ssl.expires} (${ssl.days_remaining} days remaining)</p>
+            <p class="text-gray-300">Protocol: ${ssl.protocol || 'N/A'} | Cipher: ${ssl.cipher || 'N/A'}</p>
+        </div>`;
+    } else {
+        sslHtml += '<p class="text-red-400">✗ SSL certificate is invalid or not present</p>';
+    }
+    (ssl.issues || []).forEach(i => { sslHtml += `<p class="text-amber-400 text-sm mt-1">⚠ ${i}</p>`; });
+    sslHtml += '</div>';
+    section.innerHTML += sslHtml;
+
+    // Headers
+    const h = details.headers;
+    let headersHtml = '<div class="bg-gray-900 border border-gray-800 rounded-xl p-6"><h3 class="text-lg font-bold text-white mb-4">🛡️ Security Headers</h3><div class="space-y-2 text-sm">';
+    Object.entries(h.headers_present || {}).forEach(([k, v]) => {
+        headersHtml += `<p class="text-emerald-400">✓ ${k}: <span class="text-gray-400">${v.substring(0,80)}</span></p>`;
+    });
+    (h.headers_missing || []).forEach(m => {
+        headersHtml += `<p class="text-red-400">✗ Missing: ${m}</p>`;
+    });
+    headersHtml += '</div></div>';
+    section.innerHTML += headersHtml;
+
+    // Performance
+    const p = details.performance;
+    let perfHtml = '<div class="bg-gray-900 border border-gray-800 rounded-xl p-6"><h3 class="text-lg font-bold text-white mb-4">🚀 Performance</h3>';
+    if (!p.error) {
+        perfHtml += `<div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div><p class="text-2xl font-bold text-white">${p.ttfb_ms}ms</p><p class="text-gray-500 text-sm">TTFB</p></div>
+            <div><p class="text-2xl font-bold text-white">${p.page_size_kb}KB</p><p class="text-gray-500 text-sm">Page Size</p></div>
+            <div><p class="text-2xl font-bold text-white">${p.redirects}</p><p class="text-gray-500 text-sm">Redirects</p></div>
+            <div><p class="text-2xl font-bold text-white">${p.compression}</p><p class="text-gray-500 text-sm">Compression</p></div>
+        </div>`;
+    }
+    (p.issues || []).forEach(i => { perfHtml += `<p class="text-amber-400 text-sm mt-2">⚠ ${i}</p>`; });
+    perfHtml += '</div>';
+    section.innerHTML += perfHtml;
+
+    // Tech stack
+    const tech = details.techstack;
+    let techHtml = '<div class="bg-gray-900 border border-gray-800 rounded-xl p-6"><h3 class="text-lg font-bold text-white mb-4">🔧 Tech Stack Detected</h3>';
+    if ((tech.detected || []).length > 0) {
+        techHtml += '<div class="flex flex-wrap gap-2">';
+        tech.detected.forEach(t => {
+            techHtml += `<span class="bg-gray-800 text-gray-300 px-3 py-1 rounded-full text-sm">${t}</span>`;
+        });
+        techHtml += '</div>';
+    } else {
+        techHtml += '<p class="text-gray-400">No common technologies detected (custom stack)</p>';
+    }
+    techHtml += '</div>';
+    section.innerHTML += techHtml;
+
+    // DNS
+    const dns = details.dns;
+    let dnsHtml = '<div class="bg-gray-900 border border-gray-800 rounded-xl p-6"><h3 class="text-lg font-bold text-white mb-4">🌐 DNS Health</h3><div class="space-y-2 text-sm">';
+    if (dns.a_records?.length) dnsHtml += `<p class="text-emerald-400">✓ A Records: ${dns.a_records.join(', ')}</p>`;
+    if (dns.aaaa_records?.length) dnsHtml += `<p class="text-emerald-400">✓ IPv6: ${dns.aaaa_records.join(', ')}</p>`;
+    if (dns.mx_records?.length) dnsHtml += `<p class="text-emerald-400">✓ MX: ${dns.mx_records.join(', ')}</p>`;
+    if (dns.ns_records?.length) dnsHtml += `<p class="text-gray-300">NS: ${dns.ns_records.join(', ')}</p>`;
+    dnsHtml += `<p class="${dns.has_spf ? 'text-emerald-400' : 'text-red-400'}">${dns.has_spf ? '✓' : '✗'} SPF Record</p>`;
+    dnsHtml += `<p class="${dns.has_dmarc ? 'text-emerald-400' : 'text-red-400'}">${dns.has_dmarc ? '✓' : '✗'} DMARC Record</p>`;
+    (dns.issues || []).forEach(i => { dnsHtml += `<p class="text-amber-400 mt-1">⚠ ${i}</p>`; });
+    dnsHtml += '</div></div>';
+    section.innerHTML += dnsHtml;
+
+    // Mobile
+    const m = details.mobile;
+    let mobHtml = '<div class="bg-gray-900 border border-gray-800 rounded-xl p-6"><h3 class="text-lg font-bold text-white mb-4">📱 Mobile Readiness</h3><div class="space-y-2 text-sm">';
+    mobHtml += `<p class="${m.has_viewport ? 'text-emerald-400' : 'text-red-400'}">${m.has_viewport ? '✓' : '✗'} Viewport meta tag</p>`;
+    mobHtml += `<p class="${m.has_responsive_meta ? 'text-emerald-400' : 'text-red-400'}">${m.has_responsive_meta ? '✓' : '✗'} Responsive viewport</p>`;
+    mobHtml += `<p class="${m.has_touch_icon ? 'text-emerald-400' : 'text-gray-500'}">${m.has_touch_icon ? '✓' : '–'} Touch icon</p>`;
+    mobHtml += `<p class="${m.has_media_queries ? 'text-emerald-400' : 'text-gray-500'}">${m.has_media_queries ? '✓' : '–'} Media queries</p>`;
+    (m.issues || []).forEach(i => { mobHtml += `<p class="text-amber-400 mt-1">⚠ ${i}</p>`; });
+    mobHtml += '</div></div>';
+    section.innerHTML += mobHtml;
+}
+
+// Payment
+{% if stripe_publishable_key %}
+const stripe = Stripe('{{ stripe_publishable_key }}');
+
+document.getElementById('pay-btn')?.addEventListener('click', async () => {
+    const payBtn = document.getElementById('pay-btn');
+    const processing = document.getElementById('payment-processing');
+    payBtn.classList.add('hidden');
+    processing.classList.remove('hidden');
+
+    try {
+        const formData = new FormData();
+        formData.append('report_id', currentReportId);
+        formData.append('csrfmiddlewaretoken', csrfToken);
+
+        const resp = await fetch('/create-payment-intent/', { method: 'POST', body: formData });
+        const { clientSecret, error } = await resp.json();
+        if (error) throw new Error(error);
+
+        // Redirect to Stripe Checkout (simplified — using payment element)
+        const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+                card: (await getCardElement()),
+            }
+        });
+
+        if (stripeError) throw new Error(stripeError.message);
+
+        // Unlock report
+        const unlockResp = await fetch(`/report/${currentReportId}/unlock/?payment_intent=${paymentIntent.id}`);
+        const unlockData = await unlockResp.json();
+
+        if (unlockData.details) {
+            renderDetails(unlockData.details);
+            document.getElementById('pdf-cta').classList.remove('hidden');
+            document.getElementById('pdf-link').href = `/report/${currentReportId}/pdf/`;
+            document.getElementById('payment-cta').classList.add('hidden');
+        }
+    } catch (err) {
+        alert('Payment failed: ' + err.message);
+        payBtn.classList.remove('hidden');
+        processing.classList.add('hidden');
+    }
+});
+
+let cardElement = null;
+async function getCardElement() {
+    if (cardElement) return cardElement;
+    // Create inline card form
+    const paymentCta = document.getElementById('payment-cta');
+    let cardDiv = document.getElementById('card-element');
+    if (!cardDiv) {
+        cardDiv = document.createElement('div');
+        cardDiv.id = 'card-element';
+        cardDiv.className = 'mt-4 p-4 bg-gray-800 rounded-lg';
+        paymentCta.querySelector('p').after(cardDiv);
+    }
+    const elements = stripe.elements();
+    cardElement = elements.create('card', {
+        style: {
+            base: { color: '#fff', fontSize: '16px', '::placeholder': { color: '#6B7280' } }
+        }
+    });
+    cardElement.mount('#card-element');
+
+    // Change button to confirm
+    const payBtn = document.getElementById('pay-btn');
+    payBtn.textContent = 'Confirm Payment — $1.99';
+    payBtn.onclick = null; // Remove old handler, set new one below
+
+    return new Promise(resolve => {
+        payBtn.addEventListener('click', () => resolve(cardElement), { once: true });
+    });
+}
+{% endif %}
+
+{% if staff_bypass %}
+// Staff bypass — auto-unlock after scan
+const origRender = renderResults;
+renderResults = function(data) {
+    data.paid = true;
+    origRender(data);
+};
+{% endif %}
+</script>
+{% endblock %}

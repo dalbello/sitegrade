@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Privacy Policy — SiteGrade{% endblock %}
+{% block meta_description %}SiteGrade privacy policy. How we handle your data when scanning websites.{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-16">
+    <h1 class="text-3xl font-bold text-white mb-8">Privacy Policy</h1>
+    <div class="prose prose-invert prose-gray max-w-none space-y-6 text-gray-300">
+        <p>Last updated: March 2026</p>
+
+        <h2 class="text-xl font-semibold text-white">What We Collect</h2>
+        <p>When you scan a website, we store: the URL you entered, the scan results (grades and technical findings), and a timestamp. If you purchase a full report, Stripe processes your payment — we don't store credit card details.</p>
+
+        <h2 class="text-xl font-semibold text-white">What We Don't Collect</h2>
+        <p>We don't require account creation, we don't track your browsing across other sites, and we don't sell data to third parties.</p>
+
+        <h2 class="text-xl font-semibold text-white">Analytics</h2>
+        <p>We use <a href="https://umami.is" class="text-emerald-400">Umami</a>, a privacy-focused analytics tool. It collects anonymous page view data with no cookies and no personal tracking.</p>
+
+        <h2 class="text-xl font-semibold text-white">How Scanning Works</h2>
+        <p>SiteGrade makes standard HTTP requests, SSL connections, and DNS queries to the website you specify — the same type of requests any web browser or command-line tool would make. No invasive testing, no penetration testing, no vulnerability scanning.</p>
+
+        <h2 class="text-xl font-semibold text-white">Contact</h2>
+        <p>Questions? Email <a href="mailto:tinyship.ai@gmail.com" class="text-emerald-400">tinyship.ai@gmail.com</a>.</p>
+    </div>
+</div>
+{% endblock %}
